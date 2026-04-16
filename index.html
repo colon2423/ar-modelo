@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modelo 3D AR - Cirugía Maxilofacial</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1a1a2e; color: white; font-family: sans-serif; 
+           display: flex; flex-direction: column; align-items: center; 
+           min-height: 100vh; padding: 20px; }
+    h1 { font-size: 1.2rem; margin-bottom: 6px; text-align: center; 
+         color: #a8dadc; letter-spacing: 0.05em; }
+    p  { font-size: 0.8rem; color: #aaa; margin-bottom: 16px; text-align: center; }
+    model-viewer {
+      width: 100%;
+      max-width: 600px;
+      height: 70vh;
+      background: #0f3460;
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cráneo canino — modelo 3D</h1>
+  <p>Rotá con un dedo · pellizco para zoom · botón AR para verlo en tu espacio</p>
+
+  <model-viewer
+    src="SSSS.glb"
+    alt="Craneo canino"
+    auto-rotate
+    camera-controls
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    shadow-intensity="1"
+    exposure="1.2"
+  ></model-viewer>
+</body>
+</html>

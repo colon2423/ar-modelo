@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Holograma 3D AR — Oncología Maxilofacial</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; font-family: sans-serif; height: 100vh; overflow: hidden; }
+
+    model-viewer {
+      width: 100vw;
+      height: 100vh;
+      background-color: transparent;
+    }
+
+    #controles {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .fila-botones {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .btn {
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 24px;
+      padding: 12px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      flex: 1;
+      text-align: center;
+      transition: background 0.2s;
+    }
+
+    .btn:active { background: rgba(0,120,255,0.7); }
+    .btn.activo { border-color: #00aaff; color: #00aaff; }
+
+    #btn-ar {
+      background: #00aaff;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 14px 32px;
+      border-radius: 32px;
+      color: #fff;
+      width: 100%;
+    }
+
+    #etiqueta {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 13px;
+      padding: 8px 20px;
+      border-radius: 20px;
+      z-index: 10;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    #cargando {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 16px;
+      text-align: center;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="cargando">⏳ Cargando modelo 3D...<br><span style="font-size:12px;color:#aaa">Puede tardar unos segundos</span></div>
+
+  <div id="etiqueta">🔬 Oncología Maxilofacial Veterinaria</div>
+
+  <model-viewer
+    id="visor"
+    src="https://drive.google.com/uc?export=download&id=1nuq3UDM8zZsIfO57K4FvZbqeG3hVSFz8"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    camera-controls
+    auto-rotate
+    auto-rotate-delay="1000"
+    rotation-per-second="30deg"
+    shadow-intensity="0"
+    exposure="1"
+    ar-scale="fixed"
+    style="--poster-color: transparent"
+    onload="modeloCargado()"
+    onerror="modeloError()"
+  >
+    <button slot="ar-button" id="btn-ar">📱 Ver en AR (colocá en el piso)</button>
+  </model-viewer>
+
+  <div id="controles">
+    <div class="fila-botones">
+      <button class="btn activo" onclick="verTodo()">👁 Ver todo</button>
+      <button class="btn" onclick="sacarPiel()">🦴 Solo hueso + tumor</button>
+      <button class="btn" onclick="soloTumor()">🔴 Solo tumor</button>
+    </div>
+  </div>
+
+  <script>
+    const visor = document.getElementById('visor');
+    let estadoActual = 'todo';
+
+    function modeloCargado() {
+      document.getElementById('cargando').style.display = 'none';
+    }
+
+    function modeloError() {
+      document.getElementById('cargando').innerHTML =
+        '⚠️ Error al cargar el modelo.<br><span style="font-size:12px;color:#aaa">Verificá tu conexión a internet</span>';
+    }
+
+    function actualizarBotones(activo) {
+      document.querySelectorAll('.btn').forEach(b => b.classList.remove('activo'));
+      document.getElementById('btn-' + activo)?.classList.add('activo');
+    }
+
+    function verTodo() {
+      const modelo = visor.model;
+      if (!modelo) return;
+      modelo.materials.forEach(mat => {
+        mat.setAlphaMode('OPAQUE');
+        const pbr = mat.pbrMetallicRoughness;
+        const c = pbr.baseColorFactor;
+        pbr.setBaseColorFactor([c[0], c[1], c[2], 1.0]);
+      });
+      estadoActual = 'todo';
+      document.querySelectorAll('.btn').forEach(b => b.classList.remove('activo'));
+      document.querySelector('.btn').classList.add('activo');
+    }
+
+    function sacarPiel() {
+      const modelo = visor.model;
+      if (!modelo) { alert('El modelo aún está cargando'); return; }
+      modelo.materials.forEach(mat => {
+        const nombre = mat.name.toLowerCase();
+        const esPiel = nombre.includes('piel') || nombre.includes('skin') ||
+                       nombre.includes('mucosa') || nombre.includes('labrador') ||
+                       nombre.includes('nasal') || nombre.includes('trufa') ||
+                       nombre.includes('lengua') || nombre.includes('ojo');
+        if (esPiel) {
+          mat.setAlphaMode('BLEND');
+          const pbr = mat.pbrMetallicRoughness;
+          const c = pbr.baseColorFactor;
+          pbr.setBaseColorFactor([c[0], c[1], c[2], 0.0]);
+        }
+      });
+      estadoActual = 'hueso';
+      document.querySelectorAll('.btn').forEach(b => b.classList.remove('activo'));
+      document.querySelectorAll('.btn')[1].classList.add('activo');
+    }
+
+    function soloTumor() {
+      const modelo = visor.model;
+      if (!modelo) { alert('El modelo aún está cargando'); return; }
+      modelo.materials.forEach(mat => {
+        const nombre = mat.name.toLowerCase();
+        const esTumor = nombre.includes('tumor') || nombre.includes('resec') ||
+                        nombre.includes('segmen') || nombre.includes('lesion');
+        mat.setAlphaMode('BLEND');
+        const pbr = mat.pbrMetallicRoughness;
+        const c = pbr.baseColorFactor;
+        if (esTumor) {
+          pbr.setBaseColorFactor([c[0], c[1], c[2], 1.0]);
+        } else {
+          pbr.setBaseColorFactor([c[0], c[1], c[2], 0.0]);
+        }
+      });
+      estadoActual = 'tumor';
+      document.querySelectorAll('.btn').forEach(b => b.classList.remove('activo'));
+      document.querySelectorAll('.btn')[2].classList.add('activo');
+    }
+
+    setTimeout(() => {
+      if (document.getElementById('cargando').style.display !== 'none') {
+        document.getElementById('cargando').innerHTML =
+          '⏳ Descargando modelo (101MB)...<br><span style="font-size:12px;color:#aaa">Paciencia, es un archivo grande</span>';
+      }
+    }, 5000);
+  </script>
+</body>
+</html>

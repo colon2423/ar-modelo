@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Holograma AR - Cirugía Maxilofacial</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; width: 100vw; height: 100vh; }
+
+    #camara {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    #video-holograma {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      z-index: 2;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    #pantalla-inicio {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 32px;
+    }
+
+    #pantalla-inicio h1 {
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 22px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    #pantalla-inicio p {
+      color: #aaa;
+      font-family: sans-serif;
+      font-size: 14px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    #btn-iniciar {
+      background: #00aaff;
+      color: #fff;
+      border: none;
+      border-radius: 32px;
+      padding: 16px 40px;
+      font-size: 18px;
+      font-family: sans-serif;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 24px #00aaff88;
+    }
+
+    #btn-iniciar:active {
+      background: #0088cc;
+    }
+
+    #controles {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: none;
+      gap: 16px;
+      flex-direction: row;
+    }
+
+    .btn-ctrl {
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border: 1px solid #ffffff44;
+      border-radius: 24px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-family: sans-serif;
+      cursor: pointer;
+    }
+
+    #etiqueta {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: none;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 13px;
+      padding: 8px 20px;
+      border-radius: 20px;
+      text-align: center;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <video id="camara" autoplay playsinline muted></video>
+  <video id="video-holograma" playsinline loop muted></video>
+
+  <div id="pantalla-inicio">
+    <h1>🔬 Cirugía Maxilofacial AR</h1>
+    <p>Vas a ver la animación quirúrgica superpuesta sobre lo que capta tu cámara.<br><br>Apuntá el celular hacia cualquier superficie o al frente.</p>
+    <button id="btn-iniciar" onclick="iniciarAR()">▶ Iniciar AR</button>
+    <p style="font-size:12px; color:#666;">Se solicitará permiso para usar la cámara</p>
+  </div>
+
+  <div id="etiqueta">📹 Cirugía Maxilofacial — Oncología Veterinaria</div>
+
+  <div id="controles">
+    <button class="btn-ctrl" onclick="toggleVideo()">⏸ Pausar</button>
+    <button class="btn-ctrl" onclick="toggleCamara()">🔄 Cámara</button>
+  </div>
+
+  <script>
+    const videoHolograma = document.getElementById('video-holograma');
+    const camaraEl = document.getElementById('camara');
+    let streamActual = null;
+    let camaraFrontal = false;
+    let pausado = false;
+
+    async function iniciarAR() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        streamActual = stream;
+        camaraEl.srcObject = stream;
+        await camaraEl.play();
+
+        // Cargar el video holograma
+        videoHolograma.src = 'animacion_AR.webm';
+        await videoHolograma.play();
+
+        document.getElementById('pantalla-inicio').style.display = 'none';
+        document.getElementById('etiqueta').style.display = 'block';
+        document.getElementById('controles').style.display = 'flex';
+
+      } catch (err) {
+        alert('No se pudo acceder a la cámara. Por favor permitir el acceso e intentar de nuevo.\n\n' + err.message);
+      }
+    }
+
+    function toggleVideo() {
+      const btn = document.querySelector('#controles .btn-ctrl');
+      if (pausado) {
+        videoHolograma.play();
+        btn.textContent = '⏸ Pausar';
+        pausado = false;
+      } else {
+        videoHolograma.pause();
+        btn.textContent = '▶ Reanudar';
+        pausado = true;
+      }
+    }
+
+    async function toggleCamara() {
+      if (!streamActual) return;
+      streamActual.getTracks().forEach(t => t.stop());
+      camaraFrontal = !camaraFrontal;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: camaraFrontal ? 'user' : 'environment' },
+          audio: false
+        });
+        streamActual = stream;
+        camaraEl.srcObject = stream;
+        await camaraEl.play();
+      } catch (err) {
+        alert('No se pudo cambiar la cámara.');
+      }
+    }
+  </script>
+</body>
+</html>
